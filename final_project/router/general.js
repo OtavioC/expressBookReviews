@@ -4,6 +4,8 @@ let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
+const axios = require('axios');
+
 
 public_users.post("/register", (req,res) => {
   //Write your code here
@@ -12,14 +14,32 @@ public_users.post("/register", (req,res) => {
 
 // Get the book list available in the shop
 public_users.get('/',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    res.send(JSON.stringify(books));
 });
 
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    const isbn = req.params.isbn; // Substitua pelo ISBN que você deseja consultar
+    const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
+    
+    axios.get(url)
+    .then (resposta =>{
+        if(resposta.data.items.length >0){
+            const titulo=resposta.data.items[0].volumeInfo.title;
+            const MyDataOnBook = Object.values(books).filter(book => book.title === titulo);
+            if (MyDataOnBook.length > 0) {
+                res.json(MyDataOnBook[0]); // Retorna o livro encontrado
+            } else {
+                res.status(404).json({ message: "Livro não encontrado no banco local" });
+            }
+        } else {
+            return res.status(404).json({ message: "Livro não encontrado na API do Google" });
+        }
+    })
+    .catch(error=>{
+        res.status(500).json({message: "Erro ao pesquisar livro"});
+    })
+    
  });
   
 // Get book details based on author
