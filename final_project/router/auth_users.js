@@ -56,6 +56,10 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     const reviewText = req.body.review
     const isbn = req.params.isbn; // Substitua pelo ISBN que você deseja consultar
     const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
+
+    if (!reviewText) {
+        return res.status(404).json({ message: "Escreva a review!" });
+    }
     
     axios.get(url)
     .then (resposta =>{
@@ -87,6 +91,44 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     .catch(error => {
         res.status(500).json({ message: "Erro ao acessar a API do Google", error: error.message });
     });
+});
+
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const username = req.session.authorization.username
+
+    const isbn = req.params.isbn; // Substitua pelo ISBN que você deseja consultar
+    const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
+    
+    axios.get(url)
+    .then (resposta =>{
+        if(resposta.data.items && resposta.data.items.length >0){
+            const titulo=resposta.data.items[0].volumeInfo.title.toLowerCase();
+            
+            const book = Object.values(books).find(book => book.title.toLowerCase() === titulo);
+
+            if (!book) {
+            return res.status(404).json({ message: "Livro não encontrado."});
+            }
+
+            const existingReviewId = Object.keys(book.reviews).find( id => book.reviews[id].username === username); //Test if there's a review for req.user
+
+            if (existingReviewId) {
+                // Apaga a review
+                delete book.reviews[existingReviewId];
+                res.json({ message: "Review sucessfully deleted" });
+            } else {
+                res.status(404).json({ message: "Review não encontrada para este usuário." });
+            }
+        }
+        else {
+            res.status(404).json({ message: "Livro não encontrado na API do Google" });
+        }
+    })
+    .catch(error => {
+        res.status(500).json({ message: "Erro ao acessar a API do Google", error: error.message });
+    });
+
+
 });
 
 module.exports.authenticated = regd_users;
