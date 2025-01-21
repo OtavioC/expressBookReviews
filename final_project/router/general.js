@@ -80,12 +80,21 @@ public_users.get('/author/:author',function (req, res) {
     if (!authorName){                        //Test is there is a name
         return res.status(400).json({ message: "Please, specify the author name" });
     }
-    const MyDataOnBook = Object.values(books).filter(book => book.author === authorName);
-    if(MyDataOnBook.length ===0){                        //Test is there is a book
-        return res.status(400).json({ message: "No book written under that author name" });
-    } else{
-        res.json(MyDataOnBook);
-    }
+
+    new Promise((resolve, reject) => {
+        const MyDataOnBook = Object.values(books).filter(book => book.author === authorName);
+        if (MyDataOnBook.length === 0) {
+            reject("No book written under that author name");
+        } else {
+            resolve(MyDataOnBook);
+        }
+    })
+    .then(MyDataOnBook => {
+        res.json(MyDataOnBook); // Envia a resposta com os livros encontrados
+    })
+    .catch(error => {
+        res.status(400).json(error); // Retorna erro caso não encontre livros
+    });
 });
 
 // Get all books based on title
@@ -96,14 +105,20 @@ public_users.get('/title/:title',function (req, res) {
         return res.status(400).json({ message: "Please, specify the book title" });
     }
 
-    // Find the books
-    const MyDataOnBook = Object.values(books).filter(book => book.title === titleName);
+    new Promise ((resolve,reject)=>{
+        const MyDataOnBook = Object.values(books).filter(book => book.title === titleName);
+        if (MyDataOnBook.length === 0) {  // Verifica se não encontrou livros com esse título
+            reject("No book found with that title");
+        } else {
+            resolve(MyDataOnBook);  // Retorna os livros encontrados
+        }
+    }).then(MyDataOnBook => {
+        res.json(MyDataOnBook); // Envia a resposta com os livros encontrados
+    })
+    .catch(error => {
+        res.status(400).json(error); // Retorna erro caso não encontre livros
+    });
 
-    if (MyDataOnBook.length === 0) {  // Verifica se não encontrou livros com esse título
-        return res.status(400).json({ message: "No book found with that title" });
-    } else {
-        res.json(MyDataOnBook);  // Retorna os livros encontrados
-    }
 });
 
 //  Get book review
